@@ -1,5 +1,6 @@
 
 import { toast } from "sonner";
+import { Book } from "@/types/book";
 
 const API_URL = "http://localhost:8000/api/v1"; // Replace with your Laravel API URL
 
@@ -7,6 +8,7 @@ interface LoginCredentials {
   email: string;
   password: string;
   remember?: boolean;
+  
 }
 
 interface RegisterInput {
@@ -179,14 +181,15 @@ const getProfile = async (): Promise<any> => {
   }
 };
 
-// Get user Books rating
-const getBooksRating = async (): Promise<any> => {
+
+// Get user Books list history
+const getUserBookslist = async (page = 1, perPage = 10): Promise<Book[]> => {
   const token = getToken();
    	
   if (!token) throw new Error("Not authenticated");
   
   try {
-    const response = await fetch(`${API_URL}/profile`, {
+    const response = await fetch(`${API_URL}/users/history`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -198,10 +201,41 @@ const getBooksRating = async (): Promise<any> => {
     if (!response.ok) {
       
       const error = data as ApiError;
-      throw new Error(error.message || "Failed to get books rating list");
+      throw new Error(error.message || "Failed to get books list");
     }
-	const result = data.data.user as LoginResponse;
-    return await result;
+      return data.data.userhistory || data; // Handle both {data: []} and direct array responses
+  } catch (error) {
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("An unexpected error occurred");
+    }
+    throw error;
+  }
+};
+
+// Get  Books list
+const getBookslist = async (page = 1, perPage = 10): Promise<Book[]> => {
+  const token = getToken();
+   	
+  if (!token) throw new Error("Not authenticated");
+  
+  try {
+    const response = await fetch(`${API_URL}/books`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+	const data = await response.json();
+    if (!response.ok) {
+      
+      const error = data as ApiError;
+      throw new Error(error.message || "Failed to get books list");
+    }
+      return data.data.books || data; // Handle both {data: []} and direct array responses
   } catch (error) {
     if (error instanceof Error) {
       toast.error(error.message);
@@ -213,12 +247,46 @@ const getBooksRating = async (): Promise<any> => {
 };
 
 
+// Get  Book details
+const getBook = async (id: number): Promise<Book> => {
+  const token = getToken();
+   	
+  if (!token) throw new Error("Not authenticated");
+  
+  try {
+    const response = await fetch(`${API_URL}/books/view/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+	const data = await response.json();
+    if (!response.ok) {
+      
+      const error = data as ApiError;
+      throw new Error(error.message || "Failed to get books list");
+    }
+      return data.data.book || data;
+  } catch (error) {
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("An unexpected error occurred");
+    }
+    throw error;
+  }
+};
+
 export const api = {
   login,
   logout,
   register,
   getProfile,
-  getBooksRating,
+  getBookslist,
+  getUserBookslist,
+  getBook,
   isLoggedIn,
   getToken,
 };
